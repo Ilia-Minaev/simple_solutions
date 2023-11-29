@@ -1,0 +1,64 @@
+{% extends "./stripe_payments_base.html" %}
+
+
+{% block title %}{{ single_item.name }}{% endblock %}
+
+{% block main %}
+
+<div class="container">
+    <div class="row mt-5">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    {{ single_item.name }}
+                </div>
+                <div class="card-body">
+                    <div class="card-title">
+                        <b>Name:</b> <span>{{ single_item.name }}</span>
+                    </div>
+                    <div class="card-text mb-3">
+                        <div>
+                            <b>Descrition:</b>
+                            {{ single_item.description }}
+                        </div>
+                        <div><b>Price:</b> {{ single_item.price }} DINERO</div>
+                    </div>
+
+                    <button type="button" id="checkout-button" class="btn btn-primary">Checkout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% csrf_token %}
+<script type="text/javascript">
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    let stripe = Stripe("{{ STRIPE_PUBLIC_KEY }}");
+    let checkoutButton = document.getElementById("checkout-button");
+    checkoutButton.addEventListener("click", function () {
+        fetch("{% url 'create-checkout-session' single_item.pk %}", {
+            method: "POST",
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN
+            }
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (session) {
+                return stripe.redirectToCheckout({sessionId: session.id});
+            })
+            .then(function (result) {
+                if (result.error) {
+                    alert(result.error.message);
+                }
+            })
+            .catch(function (error) {
+                console.error("Error:", error);
+            });
+    });
+</script>
+
+{% endblock main %}
